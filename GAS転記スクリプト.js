@@ -4,10 +4,12 @@
  * Created: 2025-05-10
  * Description: 
  * 転記用汎用スクリプト（SpreadSheet -> SpreadSheet）
- *  ・転記タイミングは手動実行またはGASのトリガー設定から行う
+ *  ・転記は手動実行またはGASのトリガー設定で設定されたタイミングで実行される
  *  ・TODOコメントを参照の上、PJに合わせて変更を行い、使用する
+ *  ・通知送信先メールアドレスはカンマ区切りで複数設定可能
  *  ・初回のみsetProperties関数のコメントを外し、実行する
  *    （scriptPropertiesを現在に設定することで過去のデータが再転記されないようにする）
+ *  ・GAS上での拡張子は.gs
  * ==========================================================================
  */
 
@@ -17,7 +19,7 @@
 //   return;
 // }
 
-function transferFormData() {
+function transferData() {
   const scriptProperties = PropertiesService.getScriptProperties();
 
   // 前回実行時刻を取得
@@ -27,14 +29,14 @@ function transferFormData() {
   // 現在時刻を取得
   const now = new Date();
 
-  // 転記元情報（TODO: PJに合わせて適宜変更）
+  // 転記元情報（TODO: PJに合わせて'転記元URL'と'転記元シート名'を変更）
   const sourceSpreadsheet = SpreadsheetApp.openById('転記元URL');
   const sourceSheet = sourceSpreadsheet.getSheetByName('転記元シート名');
   const sourceData = sourceSheet.getDataRange().getValues();
   const sourceHeaders = sourceData[0];
 
-  // 転記先情報（TODO: PJに合わせて適宜変更）
-  const targetSpreadsheet = SpreadsheetApp.openById('転記元URL');
+  // 転記先情報（TODO: PJに合わせて'転記先URL'と'転記先シート名'を変更）
+  const targetSpreadsheet = SpreadsheetApp.openById('転記先URL');
   const targetSheet = targetSpreadsheet.getSheetByName('転記先シート名');
   const targetHeaders = targetSheet.getDataRange().getValues()[0];
 
@@ -48,17 +50,17 @@ function transferFormData() {
   // 新規追加行
   const newRows = [];
 
-  // 転記データを配列に格納
+  // 転記準備
   for (let i = 1; i < sourceData.length; i++) {
     const row = sourceData[i];
 
     // 入力日時を取得
     const timestamp = lastRun ? new Date(row[sourceHeaders.indexOf('Timestamp')]) : null;
 
-    // 新規追加データかどうかを判定
+    // 追加データの有無を判定
     const isNew = lastRun ? (timestamp > lastRun && timestamp <= now) : false;
 
-    // 新規追加データであれば処理実行
+    // 追加データがあれば配列に格納
     if (isNew) {
       const newRow = [];
       for (let j = 0; j < targetHeaders.length; j++) {
@@ -80,8 +82,7 @@ function transferFormData() {
   if (newRows.length > 0) {
     targetSheet.getRange(targetSheet.getLastRow() + 1, 1, newRows.length, targetHeaders.length).setValues(newRows);
     
-    const sheet = SpreadsheetApp.getActiveSpreadsheet();
-    const sheetUrl = sheet.getUrl();
+    const sheetUrl = SpreadsheetApp.getActiveSpreadsheet().getUrl();
 
     // メール通知：転記データの件数を通知（TODO: メールアドレスを追加する）
     MailApp.sendEmail({
