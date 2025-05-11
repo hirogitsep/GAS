@@ -14,6 +14,15 @@
  *  ・GAS上での拡張子は.gs
  * ==========================================================================
  */
+
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu('カスタムメニュー')
+    .addItem('転記処理の実行', 'transferData')
+    // .addItem('チェック済シートの削除', 'deleteCheckedSheets')
+    .addToUi();
+}
+
 function transferData() {
   const sourceSpreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const sourceSheets = sourceSpreadsheet.getSheets();
