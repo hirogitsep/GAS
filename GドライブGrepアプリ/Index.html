@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+</head>
+<body>
+  <h3 style="width:30%; background-color:#007BFF; color:#fff; padding:8px;">GoogleドライブGrep検索</h3>
+
+  <label>検索対象フォルダID（複数フォルダはカンマ区切り）:<br>
+    <input type="text" id="folderIds" style="width:30%" placeholder="https://drive.google.com/drive/folders/～以降がフォルダID">
+  </label><br><br>
+
+  <label>検索キーワード:<br>
+    <input type="text" id="keyword" style="width:30%" placeholder="検索文字列を入力">
+  </label><br><br>
+
+  <label>検索モード:<br>
+    <select id="mode">
+      <option value="partial" selected>部分一致</option>
+      <option value="exact">完全一致</option>
+      <option value="regex">正規表現</option>
+    </select>
+  </label><br><br>
+
+  <label>
+    <input type="checkbox" id="exportCheckbox">
+    検索結果をスプレッドシートに出力
+  </label><br><br>
+
+  <div style="padding-left:12%">
+    <button onclick="doSearch()">検索実行</button>
+  </div>
+  <hr>
+
+  <div id="results"></div>
+
+  <script>
+    function doSearch() {
+      const folderIds = document.getElementById('folderIds').value.split(',').map(s => s.trim()).filter(s => s);
+      const keyword = document.getElementById('keyword').value.trim();
+      const mode = document.getElementById('mode').value;
+      const outputToSpreadsheet = document.getElementById('exportCheckbox').checked;
+
+      if (folderIds.length === 0) {
+        alert('検索対象フォルダIDを入力してください');
+        return;
+      }
+      if (!keyword) {
+        alert('検索キーワードを入力してください');
+        return;
+      }
+
+      document.getElementById('results').innerHTML = '検索中...';
+
+      google.script.run.withSuccessHandler(displayResults)
+        .searchFiles(folderIds, keyword, mode, outputToSpreadsheet);
+    }
+
+    function displayResults(response) {
+      const results = response.results;
+      const spreadsheetUrl = response.spreadsheetUrl;
+      let html = '';
+
+      if (results.length === 0) {
+        html += '<p>該当ファイルはありません。</p>';
+      } else {
+        html += '<h4>検索結果 (' + results.length + '件)</h4><ul>';
+        results.forEach(r => {
+          html += `<li><a href="${r.url}" target="_blank">${r.name}</a><br><small>${r.snippet}</small></li>`;
+        });
+        html += '</ul>';
+      }
+
+      if (spreadsheetUrl) {
+        html += `<p>検索結果は以下のスプレッドシートに保存されました：<br><a href="${spreadsheetUrl}" target="_blank">${spreadsheetUrl}</a></p>`;
+      }
+
+      document.getElementById('results').innerHTML = html;
+    }
+  </script>
+</body>
+</html>
